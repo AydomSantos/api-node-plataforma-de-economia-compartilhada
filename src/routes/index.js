@@ -5,6 +5,7 @@ const router = express.Router();
 
 const userRoutes = require('./userRoutes');
 const authRoutes = require('./authRoutes');
+const categoryRoutes = require('./categoryRoutes'); 
 
 // Rota de teste para a raiz /api/
 router.get('/', (req, res) => {
@@ -14,6 +15,7 @@ router.get('/', (req, res) => {
 // Suas outras rotas
 router.use('/auth', authRoutes); 
 router.use('/users', userRoutes); 
+router.use('/categories', categoryRoutes); 
 
 // Use outras rotas aqui
 

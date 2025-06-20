@@ -1,6 +1,6 @@
 // server.js (ou index.js - este é o arquivo que você executa com 'node server.js' ou 'npm start')
 
-require('dotenv').config(); // <--- SEMPRE NO TOPO! Carrega as variáveis de ambiente do .env
+require('dotenv').config(); 
 
 const app = require('./src/app'); // Importa o aplicativo Express que você configurou em src/app.js
 const connectToDatabase = require('./src/config/db'); // Importa a função de conexão com o DB
