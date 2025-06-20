@@ -1,4 +1,4 @@
-# 📚 Documentação de Estrutura da API - Plataforma de Serviços Freelancer
+# 📚 Documentação de Estrutura da API - Plataforma de economia compartilhada
 
 Este `README.md` serve como um guia de referência rápida para a estrutura do banco de dados e os módulos correspondentes da API Node.js/Express/MongoDB (Mongoose) deste projeto. Ele é destinado a desenvolvedores que precisam entender o mapeamento entre as tabelas SQL e os modelos/controladores/rotas da API.
 
