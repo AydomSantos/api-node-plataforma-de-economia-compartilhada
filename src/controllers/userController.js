@@ -64,11 +64,6 @@ const registerUser = asyncHandler(async (req, res) => {
 const loginUser = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
 
-    // Added logs for debugging
-    console.log('--- LOGIN ATTEMPT ---');
-    console.log('Received Email (login):', email);
-    console.log('Received Password (login):', password); // Be careful logging passwords in production!
-
     if (!email || !password) {
         res.status(400);
         throw new Error('Por favor, forneça email e senha');

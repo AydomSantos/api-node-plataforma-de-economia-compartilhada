@@ -8,7 +8,7 @@ const {
     deleteNotification
 } = require('../controllers/notificationController');
 
-const { protect } = require('../middleware/authMiddleware');
+const { protect } = require('../middlewares/authMiddleware');
 
 // Todas as rotas de notificação são protegidas (apenas usuários logados)
 

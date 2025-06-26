@@ -9,7 +9,7 @@ const {
     deleteRating,
 } = require('../controllers/ratingController');
 
-const { protect } = require('../middleware/authMiddleware');
+const { protect } = require('../middlewares/authMiddleware');
 
 // Rotas públicas (para visualizar avaliações)
 router.route('/service/:serviceId', getRatingsByService);

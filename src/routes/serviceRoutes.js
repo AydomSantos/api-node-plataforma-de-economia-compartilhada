@@ -7,7 +7,7 @@ const {
     updateService,
     deleteService
 } = require('../controllers/serviceController');
-const { protect, admin } = require('../middleware/authMiddleware');
+const { protect, admin } = require('../middlewares/authMiddleware');
 
 // Rotas públicas (qualquer um pode ver os serviços)
 router.get('/', getServices);

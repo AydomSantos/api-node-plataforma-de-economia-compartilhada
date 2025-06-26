@@ -1,83 +1,57 @@
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcryptjs'); // Certifique-se de ter o bcryptjs
 
-const userSchema = mongoose.Schema(
-  {
+const userSchema = mongoose.Schema({
     name: {
-      type: String,
-      required: [true, 'Por favor, adicione um nome'],
+        type: String,
+        required: [true, 'Por favor, adicione um nome'],
     },
     email: {
-      type: String,
-      required: [true, 'Por favor, adicione um email'],
-      unique: true,
+        type: String,
+        required: [true, 'Por favor, adicione um email'],
+        unique: true,
+        match: [
+            /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
+            'Por favor, adicione um email válido',
+        ],
     },
     password: {
-      type: String,
-      required: [true, 'Por favor, adicione uma senha'],
-      select: false, // Não inclui a senha nas consultas por padrão
-    },
-    phone: {
-      type: String,
-      trim: true,
-      maxlength: [20, 'O telefone não pode ter mais de 20 caracteres'],
-    },
-    address: {
-      type: String,
-      trim: true,
-      maxlength: [500, 'O endereço não pode ter mais de 500 caracteres'],
-    },
-    bio: {
-      type: String,
-      trim: true,
-      maxlength: [1000, 'A bio não pode ter mais de 500 caracteres'],
-    },
-    profile_picture: {
-      type: String,
-      trim: true,
-      default: null, // Pode ser nulo
+        type: String,
+        required: [true, 'Por favor, adicione uma senha'],
+        minlength: [6, 'A senha deve ter pelo menos 6 caracteres'],
+        select: false, // Não retorna a senha ao buscar o usuário
     },
     user_type: {
-      type: String,
-      enum: ['cliente', 'prestador', 'ambos'],
-      default: 'ambos',
+        type: String,
+        enum: ['user', 'admin', 'client', 'provider', 'ambos'], // <<--- VERIFIQUE ESTA LINHA
+        default: 'user', // Pode ser 'user' ou 'client' como padrão, dependendo da sua regra
     },
-    status: {
-      type: String,
-      enum: ['ativo', 'inativo', 'suspenso'],
-      default: 'ativo',
+    // Adicione outros campos se necessário, como phone, address, etc.
+    phone: String,
+    address: String,
+    photo: String, // URL da foto de perfil
+    isBlocked: {
+        type: Boolean,
+        default: false,
     },
-    rating_average: {
-      type: Number,
-      default: 0.00,
-      min: 0,
-      max: 5,
-      set: v => parseFloat(v.toFixed(2)) // Garante 2 casas decimais
-    },
-    rating_count: {
-      type: Number,
-      default: 0,
-    },
-  },
-  {
-    timestamps: true,
-  }
-);
-
-// Middleware para hash da senha antes de salvar
-userSchema.pre('save', async function (next) {
-  // ESSA VERIFICAÇÃO É CRÍTICA! Garante que só hasheia se a senha foi modificada ou é nova.
-  if (!this.isModified('password')) {
-    return next();
-  }
-
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-  next();
+},
+{
+    timestamps: true, // Adiciona createdAt e updatedAt
 });
-// Método para comparar senhas (usado no login)
+
+// Hash da senha antes de salvar
+userSchema.pre('save', async function (next) {
+    if (!this.isModified('password')) {
+        next();
+    }
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+});
+
+// Comparar senha inserida com a senha no banco de dados
 userSchema.methods.matchPassword = async function (enteredPassword) {
-  return await bcrypt.compare(enteredPassword, this.password);
+    return await bcrypt.compare(enteredPassword, this.password);
 };
 
 module.exports = mongoose.model('User', userSchema);

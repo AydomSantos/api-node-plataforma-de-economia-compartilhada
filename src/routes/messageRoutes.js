@@ -7,7 +7,7 @@ const {
     markMessagesAsRead
 } = require('../controllers/messageController');
 
-const { protect } = require('../middleware/authMiddleware');
+const { protect } = require('../middlewares/authMiddleware');
 
 // Todas as rotas de mensagem devem ser protegidas (apenas usuários logados)
 

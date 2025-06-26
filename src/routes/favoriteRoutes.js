@@ -7,7 +7,7 @@ const {
     checkIfFavorite,
 } = require('../controllers/favoriteController');
 
-const { protect } = require('../middleware/authMiddleware');
+const { protect } = require('../middlewares/authMiddleware');
 // Todas as rotas de favoritos são protegidas
 
 router.post('/', protect, addFavorite);

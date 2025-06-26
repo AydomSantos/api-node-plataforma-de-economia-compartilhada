@@ -7,7 +7,7 @@ const {
     deleteServiceImage,
 } = require('../controllers/serviceImageController');
 const { uploadImage } = require('../config/cloudinaryConfig'); // Importa o middleware de upload
-const { protect } = require('../middleware/authMiddleware');
+const { protect } = require('../middlewares/authMiddleware');
 
 // Rotas para adicionar e listar imagens de um serviço
 router.route('/:serviceId/images')

@@ -9,7 +9,7 @@ const {
     deleteContract
 } = require('../controllers/contractController');
 
-const { protect, authorize } = require('../middleware/authMiddleware');
+const { protect, authorize } = require('../middlewares/authMiddleware');
 
 // Todas as rotas de contrato devem ser protegidas (apenas usuários logados)
 // A autorização de quem pode fazer o que é tratada dentro do controller.

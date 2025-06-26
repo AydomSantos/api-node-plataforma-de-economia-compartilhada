@@ -1,3 +1,5 @@
+// src/routes/categoryRoutes.js
+
 const express = require('express');
 const router = express.Router();
 const {
@@ -8,22 +10,16 @@ const {
     deleteCategory
 } = require('../controllers/categoryController');
 
-const {protect, authorize} = require('../middleware/authMiddleware');
+// Assumindo que você tem um authMiddleware com 'protect' e 'authorize'
+// Se o 'authorize' for complexo ou ainda não existir, você pode confiar no check isAdmin do controller por enquanto
+const { protect } = require('../middlewares/authMiddleware'); 
 
 // Rotas públicas
-router.route('/', getCategories);
-router.route('/:id', getCategory);
+// CORREÇÃO: Usar .get() para métodos GET
+router.get('/', getCategories); // Rota para GET /api/categories
+router.get('/:id', getCategory); // Rota para GET /api/categories/:id
 
-// Rotas protegidas (apenas para administradores, você precisará implementar o 'authorize')
-// Exemplo de como seria um middleware 'authorize' para tipos de usuário:
-
-const authorize = (req, res, next) => {
-
-}
-
-// Para fins de teste inicial, você pode remover 'authorize('admin')'
-// Mas lembre-se de adicioná-lo de volta depois de ter a lógica de autorização.
-
+//
 router.post('/', protect, createCategory);
 router.put('/:id', protect, updateCategory);
 router.delete('/:id', protect, deleteCategory);
