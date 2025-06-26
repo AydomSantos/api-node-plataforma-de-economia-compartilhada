@@ -1,77 +1,132 @@
+# Plataforma de Economia Compartilhada - API Node.js
 
-## 🗄️ Estrutura do Banco de Dados (SQL Schema Reference)
-
-Abaixo estão as tabelas principais do banco de dados `plataforma_db`, com suas respectivas colunas e chaves.
-
-### `users`
-- **Propósito:** Gerencia informações de usuários, autenticação e perfis (clientes, prestadores, ambos).
-- **Colunas Principais:** `id`, `name`, `email` (UNIQUE), `password` (hashed), `phone`, `address`, `bio`, `profile_picture`, `user_type` (enum), `status` (enum), `email_verified`, `created_at`, `updated_at`.
-- **Relacionamentos:** Referenciado por `contracts` (client_id, provider_id), `favorites` (user_id), `messages` (sender_id, receiver_id), `notifications` (user_id), `ratings` (rater_id, rated_id), `services` (user_id), `user_sessions` (user_id).
-- **Notas da API:** Modelo (`userModel.js`), Controlador (`userController.js`), Rotas (`userRoutes.js`). Autenticação JWT implementada.
-
-### `categories`
-- **Propósito:** Classifica os diferentes tipos de serviços oferecidos na plataforma.
-- **Colunas Principais:** `id`, `name` (UNIQUE), `description`, `icon`, `color`, `status` (enum), `created_at`, `updated_at`.
-- **Relacionamentos:** Referenciado por `services` (category_id).
-- **Notas da API:** Modelo (`categoryModel.js`), Controlador (`categoryController.js`), Rotas (`categoryRoutes.js`). CRUD básico implementado.
-
-### `services`
-- **Propósito:** Armazena detalhes sobre os serviços oferecidos por prestadores.
-- **Colunas Principais:** `id`, `user_id` (FK User), `category_id` (FK Category), `title`, `description`, `price`, `price_unit` (enum), `location`, `service_type` (enum), `duration_estimate`, `requirements`, `image_url`, `status` (enum), `views_count`, `rating_average`, `rating_count`, `created_at`, `updated_at`.
-- **Relacionamentos:** Referencia `users` e `categories`. Referenciado por `contracts`, `favorites`, `ratings`, `service_images`.
-- **Notas da API:** **PENDENTE**. Requer `serviceModel.js`, `serviceController.js`, `serviceRoutes.js`.
-
-### `service_images`
-- **Propósito:** Armazena URLs e metadados de imagens associadas a cada serviço.
-- **Colunas Principais:** `id`, `service_id` (FK Service), `image_url`, `alt_text`, `is_primary`, `display_order`, `created_at`.
-- **Relacionamentos:** Referencia `services`.
-- **Notas da API:** **PENDENTE**. Pode ser integrado ao `serviceController` ou ter um controlador dedicado.
-
-### `contracts`
-- **Propósito:** Gerencia as propostas, negociações e status dos acordos de serviço entre clientes e prestadores.
-- **Colunas Principais:** `id`, `service_id` (FK Service), `client_id` (FK User), `provider_id` (FK User), `title`, `description`, `proposed_price`, `agreed_price`, `estimated_duration`, `location`, `status` (enum), `start_date`, `end_date`, `completion_date`, `client_notes`, `provider_notes`, `cancellation_reason`, `created_at`, `updated_at`.
-- **Relacionamentos:** Referencia `services` e `users` (duas vezes). Referenciado por `messages` e `ratings`.
-- **Notas da API:** **PENDENTE**. Requer `contractModel.js`, `contractController.js`, `contractRoutes.js`.
-
-### `favorites`
-- **Propósito:** Registra os serviços que um usuário marcou como favoritos.
-- **Colunas Principais:** `id`, `user_id` (FK User), `service_id` (FK Service), `created_at`.
-- **Relacionamentos:** Referencia `users` e `services`.
-- **Notas da API:** **PENDENTE**. Requer `favoriteModel.js`, `favoriteController.js`, `favoriteRoutes.js`.
-
-### `messages`
-- **Propósito:** Sistema de mensagens internas para comunicação relacionada a contratos.
-- **Colunas Principais:** `id`, `contract_id` (FK Contract, NULLABLE), `sender_id` (FK User), `receiver_id` (FK User), `subject`, `content`, `message_type` (enum), `is_read`, `parent_message_id` (FK Message, auto-referencial, NULLABLE), `created_at`.
-- **Relacionamentos:** Referencia `contracts`, `users` (duas vezes), e a si mesma.
-- **Notas da API:** **PENDENTE**. Requer `messageModel.js`, `messageController.js`, `messageRoutes.js`.
-
-### `notifications`
-- **Propósito:** Armazena notificações para usuários sobre atividades na plataforma.
-- **Colunas Principais:** `id`, `user_id` (FK User), `title`, `message`, `type` (enum), `related_id` (NULLABLE), `is_read`, `created_at`.
-- **Relacionamentos:** Referencia `users`.
-- **Notas da API:** **PENDENTE**. Requer `notificationModel.js`, `notificationController.js`, `notificationRoutes.js`.
-
-### `ratings`
-- **Propósito:** Armazena avaliações de serviços e usuários.
-- **Colunas Principais:** `id`, `contract_id` (FK Contract), `rater_id` (FK User), `rated_id` (FK User), `service_id` (FK Service), `rating` (1-5), `comment`, `rating_type` (enum), `is_visible`, `created_at`.
-- **Relacionamentos:** Referencia `contracts`, `users` (duas vezes), `services`.
-- **Notas da API:** **PENDENTE**. Requer `ratingModel.js`, `ratingController.js`, `ratingRoutes.js`.
-
-### `user_sessions`
-- **Propósito:** Rastreamento de sessões de usuário (endereço IP, user-agent, última atividade).
-- **Colunas Principais:** `id`, `user_id` (FK User, NULLABLE), `ip_address`, `user_agent`, `last_activity`, `created_at`.
-- **Relacionamentos:** Referencia `users`.
-- **Notas da API:** **PENDENTE / Opcional**. Pode ser usado para segurança extra, mas o JWT já lida com a maioria dos cenários de sessão para APIs RESTful.
+API RESTful para uma plataforma de serviços freelancer, permitindo o gerenciamento de usuários, serviços, contratos, mensagens, avaliações, favoritos, notificações e imagens de serviços.
 
 ---
 
-## 🛠️ Convenções de Nomenclatura e Arquitetura
+## 🚀 Tecnologias Utilizadas
 
-* **Modelos:** Localizados em `src/models/`, nomeados como `[NomeDaTabelaSingular]Model.js` (ex: `userModel.js`, `categoryModel.js`).
-* **Controladores:** Localizados em `src/controllers/`, nomeados como `[NomeDaTabelaSingular]Controller.js`. Contêm a lógica das rotas.
-* **Rotas:** Localizadas em `src/routes/`, nomeadas como `[NomeDaTabelaSingular]Routes.js`. Definem os endpoints da API.
-* **Middleware:** Localizados em `src/middleware/`.
-* **Configuração:** Localizados em `src/config/`.
+- **Node.js** + **Express**: Backend e roteamento HTTP.
+- **MongoDB** + **Mongoose**: Banco de dados NoSQL e ODM.
+- **JWT**: Autenticação baseada em tokens.
+- **Cloudinary**: Armazenamento de imagens.
+- **Multer**: Upload de arquivos.
+- **Swagger**: Documentação automática da API.
+- **dotenv**: Gerenciamento de variáveis de ambiente.
+- **bcryptjs**: Hash de senhas.
+- **morgan**: Logger de requisições.
+- **cors**: Permitir requisições cross-origin.
+
+---
+
+## 📁 Estrutura de Pastas
+
+```
+src/
+  app.js                # Configuração principal do Express
+  config/               # Configurações (DB, Cloudinary, Swagger)
+  controllers/          # Lógica de cada recurso (users, services, etc)
+  middlewares/          # Middlewares de autenticação, erros, etc
+  models/               # Schemas do Mongoose
+  routes/               # Rotas da API
+  utils/                # Funções utilitárias (se necessário)
+server.js               # Inicialização do servidor
+.env                    # Variáveis de ambiente
+```
+
+---
+
+## 🧩 Funcionalidades Principais
+
+- **Autenticação JWT**: Registro, login e proteção de rotas.
+- **Usuários**: CRUD de usuários, tipos (admin, client, provider, ambos).
+- **Categorias**: CRUD de categorias de serviços (apenas admin pode criar/editar/deletar).
+- **Serviços**: CRUD de serviços, filtro por categoria, localização, etc.
+- **Imagens de Serviços**: Upload e gerenciamento de imagens via Cloudinary.
+- **Contratos**: Propostas, negociações, aceitação, conclusão e cancelamento de contratos.
+- **Mensagens**: Sistema de mensagens entre usuários, agrupadas por contrato ou 1-1.
+- **Favoritos**: Usuários podem favoritar/desfavoritar serviços.
+- **Avaliações**: Sistema de avaliações entre clientes e prestadores, com média automática.
+- **Notificações**: Notificações automáticas para eventos importantes (contratos, mensagens, avaliações).
+- **Swagger**: Documentação interativa disponível em `/api-docs`.
+
+---
+
+## 🔒 Autenticação & Autorização
+
+- **JWT**: Usuário recebe token ao logar/registrar.
+- **Middleware `protect`**: Protege rotas privadas.
+- **Middleware `authorize`**: Restringe acesso por tipo de usuário (ex: admin).
+
+---
+
+## 🛠️ Como Rodar o Projeto
+
+1. **Clone o repositório**
+   ```sh
+   git clone https://github.com/seu-usuario/seu-repo.git
+   cd seu-repo
+   ```
+
+2. **Instale as dependências**
+   ```sh
+   npm install
+   ```
+
+3. **Configure o arquivo `.env`**
+   ```
+   PORT=3000
+   MONGO_URL=...
+   JWT_SECRET=...
+   CLOUDINARY_CLOUD_NAME=...
+   CLOUDINARY_API_KEY=...
+   CLOUDINARY_API_SECRET=...
+   ```
+
+4. **Inicie o servidor**
+   ```sh
+   npm run dev
+   ```
+   O servidor estará rodando em `http://localhost:3000`.
+
+5. **Acesse a documentação Swagger**
+   - [http://localhost:3000/api-docs](http://localhost:3000/api-docs)
+
+---
+
+## 📚 Endpoints Principais
+
+- **/api/auth/**: Registro, login, perfil do usuário autenticado.
+- **/api/users/**: CRUD de usuários (admin).
+- **/api/categories/**: CRUD de categorias (admin).
+- **/api/services/**: CRUD de serviços, busca e filtros.
+- **/api/service-images/**: Upload e gerenciamento de imagens de serviços.
+- **/api/contracts/**: Propostas, negociações, status de contratos.
+- **/api/messages/**: Envio e leitura de mensagens.
+- **/api/notifications/**: Listagem e gerenciamento de notificações.
+- **/api/ratings/**: Avaliações de usuários e serviços.
+- **/api/favorites/**: Favoritar/desfavoritar serviços.
+
+---
+
+## 📝 Observações
+
+- **Administração**: Apenas usuários com `user_type: 'admin'` podem criar, editar ou deletar categorias e usuários.
+- **Validações**: Diversas validações de negócio e segurança em todos os endpoints.
+- **Uploads**: Imagens de serviços são armazenadas no Cloudinary.
+- **Notificações**: Geradas automaticamente para eventos importantes.
+
+---
+
+## 📄 Licença
+
+MIT
+
+---
+
+## 👨‍💻 Contribuição
+
+Pull requests são bem-vindos! Abra uma issue para discutir melhorias ou reportar bugs.
 
 ---
 
