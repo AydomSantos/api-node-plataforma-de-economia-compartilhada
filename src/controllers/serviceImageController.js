@@ -8,7 +8,7 @@ const { cloudinary } = require('../config/cloudinaryConfig'); // Certifique-se d
 // @access  Privado (apenas o prestador dono do serviço)
 const addServiceImage = asyncHandler(async (req, res) => {
     const { serviceId } = req.params;
-    const { imageUrl, publicId, description, is_thumbnail } = req.body; // publicId virá do Cloudinary no frontend
+    const { imageUrl, publicId, description, is_thumbnail } = req.body;
 
     // 1. Validar campos obrigatórios
     if (!imageUrl || !publicId) {
@@ -35,11 +35,6 @@ const addServiceImage = asyncHandler(async (req, res) => {
             { service_id: serviceId, is_thumbnail: true },
             { $set: { is_thumbnail: false } }
         );
-    } else {
-        // Se nenhuma imagem for thumbnail, a primeira será automaticamente a thumbnail.
-        // Se já existem imagens e esta não é explicitamente uma thumbnail,
-        // garantimos que se não houver outra thumbnail, esta não se torne.
-        // Opcional: Você pode querer forçar que sempre haja uma thumbnail.
     }
 
     // 5. Criar a imagem de serviço

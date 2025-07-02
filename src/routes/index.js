@@ -13,10 +13,6 @@ const notificationRoutes = require('./notificationRoutes');
 const ratingRoutes = require('./ratingRoutes');
 const favoriteRoutes = require('./favoriteRoutes');
 const serviceImageRoutes = require('./serviceImageRoutes'); // Importa as rotas de imagens de serviços
-// Rota de teste para a raiz /api/
-router.get('/', (req, res) => {
-  res.status(200).json({ message: 'API is running successfully!', version: '1.0.0' });
-});
 
 // Suas outras rotas
 router.use('/auth', authRoutes); 
@@ -28,6 +24,6 @@ router.use('/messages', messageRoutes);
 router.use('/notifications', notificationRoutes); 
 router.use('/ratings', ratingRoutes); 
 router.use('/favorites', favoriteRoutes);
-router.use('/service-images', serviceImageRoutes); // Rota para as imagens de serviços
+router.use('/services/:serviceId/imagens', serviceImageRoutes); 
 
-module.exports = router; 
+module.exports = router;

@@ -1,22 +1,34 @@
+// src/routes/serviceRoutes.js
 const express = require('express');
-const router = express.Router();
-const {
-    addServiceImage,
-    getServiceImages,
-    updateServiceImage,
-    deleteServiceImage,
-} = require('../controllers/serviceImageController');
-const { uploadImage } = require('../config/cloudinaryConfig'); // Importa o middleware de upload
+const router = express.Router({ mergeParams: true }); // Permite acessar :serviceId
+
 const { protect } = require('../middlewares/authMiddleware');
+const {
+    createService,
+    getServices,
+    getServiceById,
+    updateService,
+    deleteService
+} = require('../controllers/serviceController');
 
-// Rotas para adicionar e listar imagens de um serviço
-router.route('/:serviceId/images')
-.post(protect, uploadImage.single('image'), addServiceImage) // 'image' é o nome do campo no formulário
-.get(getServiceImages);
+// Importe os controladores e o middleware de imagem aqui
+const { addServiceImage, getServiceImages } = require('../controllers/serviceImageController');
+const { uploadImage } = require('../config/cloudinaryConfig'); // Se você for usar upload direto aqui
 
-// Rotas para gerenciar imagens individuais (atualizar, deletar)
+// Rotas de CRUD para serviços (já existentes)
+router.route('/')
+    .post(protect, createService)
+    .get(getServices);
+
 router.route('/:id')
-    .put(protect, updateServiceImage)
-    .delete(protect, deleteServiceImage);
+    .get(getServiceById)
+    .put(protect, updateService)
+    .delete(protect, deleteService);
+
+// Adicione as rotas de imagem aqui, relative a /services
+router
+  .route('/')
+  .post(protect, uploadImage.single('image'), addServiceImage) // ou só addServiceImage se não for upload
+  .get(getServiceImages);
 
 module.exports = router;
