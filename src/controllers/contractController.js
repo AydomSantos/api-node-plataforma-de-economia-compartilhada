@@ -17,6 +17,8 @@ const isAdmin = (user) => user.user_type === 'admin';
 const createContract = asyncHandler(async (req, res) => {
     const { service_id, description, proposed_price, estimated_duration, location, start_date, end_date } = req.body; // Adicionei start_date e end_date caso venham
 
+    console.log('Body recebido:', req.body);
+
     // Apenas clientes ou usuários 'ambos' podem criar contratos
     if (!isClient(req.user)) {
         res.status(403); // Use throw new Error para que o errorHandler capture
@@ -294,9 +296,10 @@ const updateContractStatus = asyncHandler(async (req, res) => {
 // @route   PUT /api/contracts/:id/negotiate-price
 // @access  Privado (Cliente ou Prestador do contrato)
 const negotiateContractPrice = asyncHandler(async (req, res) => {
-    const { new_price } = req.body;
+    let { new_price } = req.body;
+    new_price = Number(new_price); // <-- Converte para número
 
-    if (typeof new_price !== 'number' || new_price < 0) {
+    if (isNaN(new_price) || new_price < 0) {
         res.status(400);
         throw new Error('O novo preço deve ser um número válido e não negativo.');
     }

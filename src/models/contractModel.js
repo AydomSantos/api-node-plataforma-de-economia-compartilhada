@@ -39,8 +39,7 @@ const contractSchema = mongoose.Schema({
     },
     agreed_price: {
         type: Number,
-        default: null, // Pode ser null até ser acordado
-        // required: [true, 'O preço acordado é obrigatório.'], // <-- REMOVIDO: não é obrigatório na criação
+        default: null, 
         min: [0, 'O preço acordado não pode ser negativo.'],
         set: v => parseFloat(v.toFixed(2)) // Garante 2 casas decimais
     },
