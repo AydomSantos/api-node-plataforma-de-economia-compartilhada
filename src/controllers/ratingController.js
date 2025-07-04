@@ -1,14 +1,15 @@
 const asyncHandler = require('express-async-handler');
+const mongoose = require('mongoose'); // CORREÇÃO: Adicionada a importação do mongoose
 const Rating = require('../models/ratingModel');
 const Service = require('../models/serviceModel');
 const Contract = require('../models/contractModel');
 const User = require('../models/userModel'); // Para atualizar rating_average do usuário
-const { createNotification } = require('./notificationController');
+const { createNotification } = require('./notificationController'); // Certifique-se de que o caminho para notificationController está correto
 
-// Funções Auxiliares (podem ser movidas para um utils/helpers.js)
+// Funções Auxiliares
 // Calcula a média de avaliação e a contagem para um determinado modelo (Service ou User)
 const calculateAverageRating = async (model, id) => {
-    // Agregação para calcular a média e a contagem de ratings para um ID específico
+    // CORREÇÃO IMPLÍCITA: new mongoose.Types.ObjectId(id) agora tem 'mongoose' definido
     const stats = await Rating.aggregate([
         {
             $match: {
@@ -33,12 +34,13 @@ const calculateAverageRating = async (model, id) => {
     };
 };
 
-// @desc    Criar uma nova avaliação
-// @route   POST /api/ratings
-// @access  Privado
+
+// @desc     Criar uma nova avaliação
+// @route    POST /api/ratings
+// @access   Privado
 const createRating = asyncHandler(async (req, res) => {
     const { contract_id, service_id, rated_id, rating_value, comment, is_anonymous } = req.body;
-    const rater_id = req.user.id; // Usuário logado é o avaliador
+    const rater_id = req.user.id; // Usuário logado é o avaliador (origem provável do erro 'toString')
 
     // 1. Validar campos obrigatórios
     if (!contract_id || !service_id || !rated_id || !rating_value) {
@@ -72,6 +74,11 @@ const createRating = asyncHandler(async (req, res) => {
     }
 
     // 5. Verificar se o avaliador e o avaliado são partes do contrato
+    if (!contract.client_id || !contract.provider_id) {
+        res.status(400);
+        throw new Error('Contrato inválido: IDs de cliente ou prestador não encontrados.');
+    }
+
     const isRaterClient = contract.client_id.toString() === rater_id.toString();
     const isRaterProvider = contract.provider_id.toString() === rater_id.toString();
 
@@ -94,10 +101,15 @@ const createRating = asyncHandler(async (req, res) => {
 
     // O prestador do serviço avaliado deve ser o rated_id se o rater for o cliente
     // Ou o cliente do contrato deve ser o rated_id se o rater for o prestador
+    // E o service_id deve ser de um serviço que o provider_id do contrato realmente oferece
     if ( (isRaterClient && service.user_id.toString() !== rated_id.toString()) ) {
         res.status(400);
         throw new Error('O serviço avaliado não corresponde ao prestador sendo avaliado neste contrato.');
     }
+    // Adicional: verificar se o service_id realmente pertence ao contrato.
+    // Isso dependerá de como você armazena o service_id no contrato, se houver.
+    // Atualmente, seu schema de contrato não tem um campo service_id fixo,
+    // então a verificação acima com `service.user_id` é a mais próxima.
 
 
     // 6. Determinar os papéis do avaliador e do avaliado
@@ -139,11 +151,14 @@ const createRating = asyncHandler(async (req, res) => {
     });
 
     // 11. Notificar o usuário avaliado
-    const ratedUser = await User.findById(rated_id);
+    // CORREÇÃO: Ajuste para avaliações anônimas na notificação
+    const raterUser = await User.findById(rater_id); // Buscar o nome do avaliador
+    const raterNameForNotification = rating.is_anonymous ? 'Um usuário anônimo' : raterUser.name;
+
     await createNotification({
         user_id: rated_id,
         title: 'Você Recebeu uma Nova Avaliação!',
-        message: `${req.user.name} avaliou você com ${rating_value} estrelas para o serviço "${service.title}".`,
+        message: `${raterNameForNotification} avaliou você com ${rating_value} estrelas para o serviço "${service.title}".`,
         type: 'nova_avaliacao',
         related_id: rating._id // Link para a avaliação
     });
@@ -154,9 +169,9 @@ const createRating = asyncHandler(async (req, res) => {
     });
 });
 
-// @desc    Obter avaliações de um serviço específico
-// @route   GET /api/ratings/service/:serviceId
-// @access  Público
+// @desc     Obter avaliações de um serviço específico
+// @route    GET /api/ratings/service/:serviceId
+// @access   Público
 const getRatingsByService = asyncHandler(async (req, res) => {
     const { serviceId } = req.params;
 
@@ -165,7 +180,6 @@ const getRatingsByService = asyncHandler(async (req, res) => {
         throw new Error('Por favor, forneça o ID do serviço.');
     }
 
-    // Opcional: Verificar se o serviço existe para retornar 404 claro
     const serviceExists = await Service.findById(serviceId);
     if (!serviceExists) {
         res.status(404);
@@ -173,16 +187,16 @@ const getRatingsByService = asyncHandler(async (req, res) => {
     }
 
     const ratings = await Rating.find({ service_id: serviceId })
-                                .populate('rater_id', 'name profile_picture') // Popula dados do avaliador
-                                .populate('rated_id', 'name') // Popula dados do avaliado
-                                .sort({ createdAt: -1 }); // Mais recentes primeiro
+                                 .populate('rater_id', 'name profile_picture')
+                                 .populate('rated_id', 'name')
+                                 .sort({ createdAt: -1 });
 
     res.status(200).json(ratings);
 });
 
-// @desc    Obter avaliações recebidas por um usuário
-// @route   GET /api/ratings/user/:userId
-// @access  Público
+// @desc     Obter avaliações recebidas por um usuário
+// @route    GET /api/ratings/user/:userId
+// @access   Público
 const getRatingsByUser = asyncHandler(async (req, res) => {
     const { userId } = req.params;
 
@@ -191,33 +205,32 @@ const getRatingsByUser = asyncHandler(async (req, res) => {
         throw new Error('Por favor, forneça o ID do usuário.');
     }
 
-    // Opcional: Verificar se o usuário existe
     const userExists = await User.findById(userId);
     if (!userExists) {
         res.status(404);
         throw new Error('Usuário não encontrado.');
     }
 
-    const ratings = await Rating.find({ rated_id: userId }) // Busca onde o usuário foi o avaliado
-                                .populate('rater_id', 'name profile_picture')
-                                .populate('service_id', 'title') // Popula o título do serviço
-                                .populate('contract_id', 'title') // Popula o título do contrato
-                                .sort({ createdAt: -1 });
+    const ratings = await Rating.find({ rated_id: userId })
+                                 .populate('rater_id', 'name profile_picture')
+                                 .populate('service_id', 'title')
+                                 .populate('contract_id', 'title')
+                                 .sort({ createdAt: -1 });
 
     res.status(200).json(ratings);
 });
 
-// @desc    Obter uma avaliação por ID
-// @route   GET /api/ratings/:id
-// @access  Público
+// @desc     Obter uma avaliação por ID
+// @route    GET /api/ratings/:id
+// @access   Público
 const getRating = asyncHandler(async (req, res) => {
     const { id } = req.params;
 
     const rating = await Rating.findById(id)
-                               .populate('contract_id', 'title status')
-                               .populate('service_id', 'title')
-                               .populate('rater_id', 'name profile_picture')
-                               .populate('rated_id', 'name profile_picture');
+                                 .populate('contract_id', 'title status')
+                                 .populate('service_id', 'title')
+                                 .populate('rater_id', 'name profile_picture')
+                                 .populate('rated_id', 'name profile_picture');
 
     if (!rating) {
         res.status(404);
@@ -227,9 +240,9 @@ const getRating = asyncHandler(async (req, res) => {
     res.status(200).json(rating);
 });
 
-// @desc    Atualizar uma avaliação
-// @route   PUT /api/ratings/:id
-// @access  Privado (Apenas o avaliador original ou Admin)
+// @desc     Atualizar uma avaliação
+// @route    PUT /api/ratings/:id
+// @access   Privado (Apenas o avaliador original ou Admin)
 const updateRating = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const { rating_value, comment, is_anonymous } = req.body;
@@ -242,14 +255,12 @@ const updateRating = asyncHandler(async (req, res) => {
         throw new Error('Avaliação não encontrada.');
     }
 
-    // Apenas o avaliador original ou um Admin pode atualizar
     const isAdmin = req.user.user_type === 'admin';
     if (rating.rater_id.toString() !== user_id.toString() && !isAdmin) {
         res.status(403);
         throw new Error('Não autorizado. Você não tem permissão para atualizar esta avaliação.');
     }
 
-    // Validar novo rating_value se fornecido
     if (rating_value !== undefined) {
         if (rating_value < 1 || rating_value > 5) {
             res.status(400);
@@ -285,9 +296,9 @@ const updateRating = asyncHandler(async (req, res) => {
     });
 });
 
-// @desc    Deletar uma avaliação
-// @route   DELETE /api/ratings/:id
-// @access  Privado (Admin ou avaliador original)
+// @desc     Deletar uma avaliação
+// @route    DELETE /api/ratings/:id
+// @access   Privado (Admin ou avaliador original)
 const deleteRating = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const user_id = req.user.id;
@@ -299,7 +310,6 @@ const deleteRating = asyncHandler(async (req, res) => {
         throw new Error('Avaliação não encontrada.');
     }
 
-    // Apenas o avaliador original ou um Admin pode deletar
     const isAdmin = req.user.user_type === 'admin';
     if (rating.rater_id.toString() !== user_id.toString() && !isAdmin) {
         res.status(403);

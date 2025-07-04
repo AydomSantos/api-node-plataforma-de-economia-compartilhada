@@ -318,9 +318,38 @@ const markMessagesAsRead = asyncHandler(async (req, res) => {
     });
 });
 
+const deleteMessage = asyncHandler(async (req, res) => {
+    const { messageId } = req.body;
+    const user_id = req.user.id; // Usuário logado é o que está deletando
+
+    if (!messageId) {
+        res.status(400);
+        throw new Error('Por favor, forneça o ID da mensagem a ser deletada.');
+    }
+
+    // Verificar se a mensagem existe e se o usuário logado é o remetente ou destinatário
+    const message = await Message.findById(messageId);
+    if (!message) {
+        res.status(404);
+        throw new Error('Mensagem não encontrada.');
+    }
+
+    if (message.sender_id.toString() !== user_id && message.receiver_id.toString() !== user_id) {
+        res.status(403);
+        throw new Error('Você não tem permissão para deletar esta mensagem.');
+    }
+
+    await Message.deleteOne({ _id: messageId });
+
+    res.status(200).json({
+        message: 'Mensagem deletada com sucesso.'
+    });
+});
+
 module.exports = {
     sendMessage,
     getConversationMessages,
     getMyConversations,
-    markMessagesAsRead
+    markMessagesAsRead,
+    deleteMessage
 };

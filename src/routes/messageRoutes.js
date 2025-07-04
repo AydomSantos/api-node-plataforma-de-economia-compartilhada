@@ -4,7 +4,8 @@ const {
     sendMessage,
     getConversationMessages,
     getMyConversations,
-    markMessagesAsRead
+    markMessagesAsRead,
+    deleteMessage
 } = require('../controllers/messageController');
 
 const { protect } = require('../middlewares/authMiddleware');
@@ -16,5 +17,6 @@ router.get('/:otherUserId', protect, getConversationMessages); // Obter mensagen
 router.get('/', protect, getConversationMessages); // Obter mensagens de uma conversa específica por contrato
 router.get('/my-conversations', protect, getMyConversations); // Obter resumo das conversas do usuário logado
 router.put('/mark-read', protect, markMessagesAsRead); // Marcar mensagens como lidas
+router.delete('/delete/:id', protect, deleteMessage); 
 
 module.exports = router;
